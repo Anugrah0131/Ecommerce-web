@@ -1,28 +1,58 @@
+import dotenv from "dotenv"
+dotenv.config()
+
+
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import product from "./model/product";
 
 const app=express()
 
 app.use(cors())
 app.use(express.json())
 
-const PORT=8080
+mongoose.connect(process.env.MONGO_DB).then(()=>console.log("DATABASE CONNECTED"))
+let products = ["gg"];
 
-const user_list=[]
+app.post("/api/products",(req,res)=>{
+     const { title,price,image } =req.body;
 
+     if (!title || !price || !image){
+        return res.status(400).json({message: "All fields are required."});
+     }
 
-app.get("/user",(req,res)=>{
-    res.json(user_list)
-})
+     const newProduct = { title,price,image};
+     product.create({ title:title,price:price,image:image})
 
+     res.status(201).json({
+        message: "product added successfully!",
+        product: newProduct,
+     });
 
-app.post("/user",(req,res)=>{
-    const{name,age,mobile}=req.body
+});
 
-    user_list.push({name,age,mobile})
+app.get("api/products", async (req,res)=>{
+    let products=await product.find()
+    res.status(200).json(products);
 
-    res.send("created new user")
-})
+});
 
+app.delete("/api/products/:id",(req,res)=>{
+    const {id} = req.params;
+    const index = products.findIndex((p) => p.Id === id);
 
-app.listen(PORT,()=>console.log(`http://localhost:${PORT}/`))
+     if (index === -1) {
+        return res.status(404).json({ message: "product not found."});
+
+     }
+
+     const deleted = products.splice(index, 1);
+     res.status(200).json({
+        message: "product deleted successfully!",
+        deleted: deleted[0],
+     });
+});
+
+const PORT = 8080;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
