@@ -131,12 +131,13 @@ app.delete("/api/categories/:id", async (req, res) => {
 });
 
 // GET /api/categories/:id
-app.get("/:id", async (req, res) => {
+app.get("/api/categories:id", async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
 
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
+    
     }
 
     // Find products linked to this category
