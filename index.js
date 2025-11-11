@@ -32,13 +32,13 @@ app.post("/api/products", async (req, res) => {
   try {
        console.log("📦 Received data:", req.body);
        
-    const { title, price, image } = req.body;
+    const { title, price, image,category } = req.body;
 
     if (!title || !price || !image) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const newProduct = await product.create({ title, price, image });
+    const newProduct = await product.create({ title, price, image, category });
 
     res.status(201).json({
       message: "Product added successfully!",
@@ -53,7 +53,7 @@ app.post("/api/products", async (req, res) => {
 //  Get all products
 app.get("/api/products", async (req, res) => {
   try {
-    const products = await product.find();
+    const products = await product.find().populate("category");
     res.status(200).json(products);
   } catch (err) {
     console.error("GET error:", err);
@@ -129,6 +129,26 @@ app.delete("/api/categories/:id", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
+// GET /api/categories/:id
+app.get("/:id", async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // Find products linked to this category
+    const products = await Product.find({ category: req.params.id });
+
+    res.json({ category, products });
+  } catch (error) {
+    console.error("Error fetching category:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 const PORT = 8080;
 app.listen(PORT, () =>
