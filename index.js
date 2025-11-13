@@ -9,48 +9,41 @@ import category from "./model/category.js";
 
 const app = express();
 
-//  Proper CORS setup
+// CORS setup
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend port
-    methods: ["GET", "POST", "DELETE"],
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true,
   })
 );
 app.use(express.json());
 
-//  MongoDB connection
+// MongoDB connect
 mongoose
   .connect(process.env.MONGO_DB)
-  .then(() => console.log(" DATABASE CONNECTED"))
-  .catch((err) => console.error(" DATABASE CONNECTION ERROR:", err));
+  .then(() => console.log("✅ DATABASE CONNECTED"))
+  .catch((err) => console.error("❌ DATABASE CONNECTION ERROR:", err));
 
+/* ------------------ PRODUCTS ------------------ */
 
-  //ADD PRODUCT SECTION//
-
-//  Add product
+// Add Product
 app.post("/api/products", async (req, res) => {
   try {
-       console.log("📦 Received data:", req.body);
-       
-    const { title, price, image,category } = req.body;
-
+    const { title, price, image, category: catId } = req.body;
     if (!title || !price || !image) {
       return res.status(400).json({ message: "All fields are required." });
     }
-
-    const newProduct = await product.create({ title, price, image, category });
-
-    res.status(201).json({
-      message: "Product added successfully!",
-      product: newProduct,
-    });
+    const newProduct = await product.create({ title, price, image, category: catId });
+    res.status(201).json({ message: "Product added successfully!", product: newProduct });
   } catch (err) {
     console.error("POST error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-//  Get all products
+// Get all products
 app.get("/api/products", async (req, res) => {
   try {
     const products = await product.find().populate("category");
@@ -61,49 +54,36 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
-//  Delete product by id
+// Delete Product
 app.delete("/api/products/:id", async (req, res) => {
   try {
     const deleted = await product.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Product not found." });
-    }
-    res
-      .status(200)
-      .json({ message: "Product deleted successfully!", deleted });
+    if (!deleted) return res.status(404).json({ message: "Product not found." });
+    res.status(200).json({ message: "Product deleted successfully!", deleted });
   } catch (err) {
     console.error("DELETE error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
-     
-  //ADD CATEGORY SECTION
 
-  //Add Category
+/* ------------------ CATEGORIES ------------------ */
 
-  app.post("/api/categories", async (req, res) => {
+// Add Category
+app.post("/api/categories", async (req, res) => {
   try {
-       console.log("📦 Received data:", req.body);
-       
     const { name, description, image } = req.body;
-
     if (!name || !description || !image) {
       return res.status(400).json({ message: "All fields are required." });
     }
-
     const newCategory = await category.create({ name, description, image });
-
-    res.status(201).json({
-      message: "Product added successfully!",
-      category: newCategory,
-    });
+    res.status(201).json({ message: "Category added successfully!", category: newCategory });
   } catch (err) {
     console.error("POST error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-//  Get all Categories
+// Get all Categories
 app.get("/api/categories", async (req, res) => {
   try {
     const categories = await category.find();
@@ -114,44 +94,30 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-//  Delete Category by id  
-app.delete("/api/categories/:id", async (req, res) => {
+// Get single category + its products
+app.get("/api/categories/:id", async (req, res) => {
   try {
-    const deleted = await category.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Category not found." });
-    }
-    res
-      .status(200)
-      .json({ message: "Category deleted successfully!", deleted });
-  } catch (err) {
-    console.error("DELETE error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-
-// GET /api/categories/:id
-app.get("/api/categories:id", async (req, res) => {
-  try {
-    const category = await Category.findById(req.params.id);
-
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
-    
-    }
-
-    // Find products linked to this category
-    const products = await Product.find({ category: req.params.id });
-
-    res.json({ category, products });
+    const foundCategory = await category.findById(req.params.id);
+    if (!foundCategory) return res.status(404).json({ message: "Category not found" });
+    const products = await product.find({ category: req.params.id });
+    res.json({ category: foundCategory, products });
   } catch (error) {
     console.error("Error fetching category:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
+// Delete Category
+app.delete("/api/categories/:id", async (req, res) => {
+  try {
+    const deleted = await category.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Category not found." });
+    res.status(200).json({ message: "Category deleted successfully!", deleted });
+  } catch (err) {
+    console.error("DELETE error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
 
 const PORT = 8080;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
