@@ -100,7 +100,7 @@ app.post("/api/categories", async (req, res) => {
   }
 });
 
-// Get all Categories
+// Get all Categoriess
 app.get("/api/categories", async (req, res) => {
   try {
     const categories = await category.find();
