@@ -54,6 +54,23 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+// Get single product
+
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    const item = await product.findById(req.params.id).populate("category");
+
+    if (!item) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json(item);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Delete Product
 app.delete("/api/products/:id", async (req, res) => {
   try {
