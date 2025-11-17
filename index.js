@@ -136,5 +136,19 @@ app.delete("/api/categories/:id", async (req, res) => {
   }
 });
 
+// Update Category
+app.put("/api/categories/:id", async (req, res) => {
+  try {
+    const updated = await category.findByIdAndUpdate(req.params.id,
+         req.body,
+         { new: true });
+    if (!updated) return res.status(404).json({ message: "Category not found." });
+    res.status(200).json({ message: "Category updated successfully!", updated });
+  } catch (err) {
+    console.error("PUT error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 const PORT = 8080;
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
