@@ -83,6 +83,20 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 });
 
+// Update Product
+app.put("/api/products/:id", async (req, res) => {
+  try {
+    const updated = await product.findByIdAndUpdate(req.params.id,  
+          req.body,
+          { new: true });
+    if (!updated) return res.status(404).json({ message: "Product not found." });
+    res.status(200).json({ message: "Product updated successfully!", updated });
+  } catch (err) {
+    console.error("PUT error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 /* ------------------ CATEGORIES ------------------ */
 
 // Add Category
