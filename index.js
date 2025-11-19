@@ -97,7 +97,7 @@ app.put("/api/products/:id", async (req, res) => {
   }
 });
 
-/* ------------------ CATEGORIES ------------------ */
+/*  CATEGORIES  */
 
 // Add Category
 app.post("/api/categories", async (req, res) => {
@@ -163,6 +163,30 @@ app.put("/api/categories/:id", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
+// RELATED PRODUCTS
+app.get("/api/products/related/:id", async (req, res) => {
+  try {
+    const product = await productModel.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Find products with same category
+    const related = await productModel
+      .find({ 
+        category: product.category, 
+        _id: { $ne: product._id } 
+      })
+      .limit(4);
+
+    res.json(related);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Start server
 
