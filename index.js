@@ -177,8 +177,27 @@ app.get("/api/products/:id", async (req, res) => {
     res.status(500).json({ message: "Error fetching product", error });
   }
 });
+// =========================
+
+// LIVE SEARCH SUGGESTIONS
+app.get("/api/products/search", async (req, res) => {
+  try {
+    const q = req.query.q;
+
+    const products = await product.find({
+      title: { $regex: q, $options: "i" }
+    }).limit(7); // limit for performance
+
+    res.json(products);
+  } catch (error) {
+    console.log("Search error:", error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
 
 
+
+      
 // =========================
 // START SERVER
 // =========================
