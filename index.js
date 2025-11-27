@@ -12,6 +12,9 @@ import category from "./model/category.js";
 // MULTER
 import upload from "./multer.js";
 
+import authRoutes from "./routes/auth.js";
+
+
 const app = express();
 
 // =====================================================
@@ -141,7 +144,7 @@ app.get("/api/products", async (req, res) => {
 app.post("/api/products",upload.single('image'), async (req, res) => {
   try {
     const newProduct = new product(req.body);
-    
+
     if (req.file) {
       const fullUrl = req.protocol + "://" + req.get("host");
       newProduct.image = `${fullUrl}/uploads/${req.file.filename}`;
@@ -212,6 +215,7 @@ app.get("/api/products/search", async (req, res) => {
   }
 });
 
+ app.use("/api/auth", authRoutes);
 
 // =====================================================
 // START SERVER
