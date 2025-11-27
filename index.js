@@ -157,17 +157,30 @@ app.post("/api/products",upload.single('image'), async (req, res) => {
   }
 });
 
-// UPDATE product
-app.put("/api/products/:id", async (req, res) => {
+// UPDATE product with image support
+app.put("/api/products/:id", upload.single("image"), async (req, res) => {
   try {
-    const updated = await product.findByIdAndUpdate(
+    const updateData = {
+      title: req.body.title,
+      price: req.body.price,
+      category: req.body.category,
+    };
+
+    // If a new image is uploaded, save it
+    if (req.file) {
+      const fullUrl = req.protocol + "://" + req.get("host");
+      updateData.image = `${fullUrl}/uploads/${req.file.filename}`;
+    }
+
+    const updatedProduct = await product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
-    res.json(updated);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to update product", error });
+
+    res.json(updatedProduct);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update product", err });
   }
 });
 
