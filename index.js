@@ -138,9 +138,15 @@ app.get("/api/products", async (req, res) => {
 });
 
 // CREATE product
-app.post("/api/products", async (req, res) => {
+app.post("/api/products",upload.single('image'), async (req, res) => {
   try {
     const newProduct = new product(req.body);
+    
+    if (req.file) {
+      const fullUrl = req.protocol + "://" + req.get("host");
+      newProduct.image = `${fullUrl}/uploads/${req.file.filename}`;
+    }
+
     const saved = await newProduct.save();
     res.json(saved);
   } catch (err) {
