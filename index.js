@@ -194,6 +194,7 @@ app.get("/api/products/search", async (req, res) => {
   }
 });
 
+app.use("/api/auth", (await import("./routes/auth.js")).default);
 
 
       
