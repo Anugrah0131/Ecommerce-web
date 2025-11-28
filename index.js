@@ -100,6 +100,7 @@ app.get("/api/categories/:id", async (req, res) => {
 
     if (!categoryData) {
       return res.status(404).json({ message: "Category not found" });
+    }
 
     const productsList = await product.find({ category: req.params.id });
 
