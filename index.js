@@ -111,6 +111,31 @@ app.get("/api/categories/:id", async (req, res) => {
 });
 
 
+// GET products by category
+
+app.get("/api/products", async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    let productsList;
+
+    if (category) {
+      // filter by category
+      productsList = await product.find({ category }).populate("category");
+    } else {
+      // return all products
+      productsList = await product.find().populate("category");
+    }
+
+    res.json(productsList);
+
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching products", error });
+  }
+});
+
+
+
 // =========================
 // PRODUCT ROUTES
 // =========================
