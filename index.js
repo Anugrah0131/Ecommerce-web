@@ -13,12 +13,15 @@ import fs from "fs";
 import path from "path";
 
 // MODELS
-import product from "./model/product.js";
-import category from "./model/category.js";
+import product from "./models/product.js";
+import category from "./models/category.js";
 
 // ROUTES (Auth)
 import authRoutes from "./routes/auth.js";
 
+// 
+import orderRoutes from "./routes/order.js";
+import Order from "./models/Order.js";
 const app = express();
 
 // =========================
@@ -233,6 +236,10 @@ app.get("/api/products/search", async (req, res) => {
 // AUTH ROUTES
 // =========================
 app.use("/api/auth", authRoutes);
+
+
+app.use("/api/orders", orderRoutes);
+
 
 // =========================
 // START SERVER
