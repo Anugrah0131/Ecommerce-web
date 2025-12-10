@@ -20,6 +20,8 @@ import category from "./models/category.js";
 import authRoutes from "./routes/auth.js";
 
 // 
+import adminOrders from "./routes/adminOrders.js";
+//
 import orderRoutes from "./routes/order.js";
 import Order from "./models/Order.js";
 const app = express();
@@ -239,7 +241,7 @@ app.use("/api/auth", authRoutes);
 
 
 app.use("/api/orders", orderRoutes);
-
+app.use("/api/admin/orders", adminOrders);
 
 // =========================
 // START SERVER
