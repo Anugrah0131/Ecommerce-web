@@ -2,38 +2,63 @@ import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema(
   {
-    userId: { type: String, default: "guest" },
-
+    /* ================= USER ================= */
+userId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  required: true, // 1. Set to true to enforce login
+},
+    /* ================= SHIPPING ================= */
     shipping: {
-      fullName: String,
-      phone: String,
-      address: String,
-      city: String,
-      state: String,
-      pincode: String,
+      fullName: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      address: { type: String, default: "" },
+      city: { type: String, default: "" },
+      state: { type: String, default: "" },
+      pincode: { type: String, default: "" },
     },
 
+    /* ================= ITEMS ================= */
     items: [
       {
-        productId: String,
-        title: String,
-        price: Number,
-        quantity: Number,
-        image: String,
+        productId: { type: String, required: true },
+        title: { type: String, required: true },
+        price: { type: Number, required: true },
+        quantity: { type: Number, required: true },
+        image: { type: String, default: "" },
       },
     ],
 
-    paymentMethod: { type: String, default: "cod" },
+    /* ================= PAYMENT ================= */
+    paymentMethod: {
+      type: String,
+      enum: ["cod", "razorpay", "stripe"],
+      default: "cod",
+    },
 
-    amount: Number,
+    /* ================= AMOUNT ================= */
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
 
+    /* ================= STATUS ================= */
     status: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", "delivered"],
-      default: "pending",
+      enum: [
+        "Placed",
+        "Packed",
+        "Shipped",
+        "Out for Delivery",
+        "Delivered",
+      ],
+      default: "Placed",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 export default mongoose.model("Order", OrderSchema);
