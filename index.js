@@ -234,17 +234,26 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 });
 
-// LIVE SEARCH
+// UPGRADED LIVE SEARCH (Perfectly synced with SearchResults.jsx)
 app.get("/api/products/search", async (req, res) => {
   try {
-    const q = req.query.q || "";
-    const results = await Product.find({
-      title: { $regex: q, $options: "i" },
-    }).limit(7);
+    const { q } = req.query;
+
+    const results = await Product.find(
+      { $text: { $search: q } }, 
+      { score: { $meta: "textScore" } } // Calculate how well it matches
+    )
+    .sort({ score: { $meta: "textScore" } }) // Sort by best match first
+    .limit(8)
+    .select("title price image categoryName");
 
     res.json(results);
   } catch (err) {
-    res.status(500).json({ message: "Search failed" });
+    // Fallback to Regex if Text Search fails or is empty
+    const results = await Product.find({
+      title: { $regex: q, $options: "i" }
+    }).limit(8);
+    res.json(results);
   }
 });
 
