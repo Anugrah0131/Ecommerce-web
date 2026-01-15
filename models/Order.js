@@ -6,8 +6,9 @@ const OrderSchema = new mongoose.Schema(
 userId: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "User",
-  required: true, // 1. Set to true to enforce login
-},
+  required: true,
+}
+,
     /* ================= SHIPPING ================= */
     shipping: {
       fullName: { type: String, default: "" },

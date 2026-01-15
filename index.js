@@ -190,6 +190,31 @@ app.post("/api/products", upload.single("image"), async (req, res) => {
   }
 });
 
+/* ======================================================
+   GET ALL ORDERS FOR A USER
+   GET /api/orders
+====================================================== */
+app.get("/", async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    // 🔒 Must pass userId from frontend
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const orders = await Order.find({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(orders);
+  } catch (err) {
+    console.error("Fetch orders error:", err);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
+
+
 // UPDATE product
 app.put("/api/products/:id", upload.single("image"), async (req, res) => {
   try {
@@ -261,8 +286,9 @@ app.get("/api/products/search", async (req, res) => {
 // AUTH & ORDER ROUTES
 // =========================
 app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);          // user + guest
-app.use("/api/orders", adminOrdersRoutes);    // admin (GET / PATCH)
+app.use("/api/orders", orderRoutes);          // user orders
+app.use("/api/admin/orders", adminOrdersRoutes); // admin only
+  // admin (GET / PATCH)
 
 // =========================
 // 404 JSON FALLBACK (VERY IMPORTANT)
