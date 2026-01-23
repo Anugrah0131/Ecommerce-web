@@ -43,9 +43,7 @@ router.get("/", async (req, res) => {
       return res.json([]);
     }
 
-    const orders = await Order.find({
-      userId: new mongoose.Types.ObjectId(userId),
-    })
+    const orders = await Order.find({ userId })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -56,23 +54,22 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 /* ======================================================
    GET RECENT ORDERS
    GET /api/orders/recent?userId=xxx
 ====================================================== */
 router.get("/recent", async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, limit = 3 } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.json([]);
     }
 
-    const orders = await Order.find({
-      userId: new mongoose.Types.ObjectId(userId),
-    })
+    const orders = await Order.find({ userId })
       .sort({ createdAt: -1 })
-      .limit(3)
+      .limit(Number(limit))
       .lean();
 
     res.json(orders);
@@ -81,6 +78,7 @@ router.get("/recent", async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 /* ======================================================
    GET ORDER BY ID

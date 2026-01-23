@@ -20,15 +20,20 @@ userId: {
     },
 
     /* ================= ITEMS ================= */
-    items: [
-      {
-        productId: { type: String, required: true },
-        title: { type: String, required: true },
-        price: { type: Number, required: true },
-        quantity: { type: Number, required: true },
-        image: { type: String, default: "" },
-      },
-    ],
+  items: [
+  {
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    title: String,
+    price: Number,
+    quantity: Number,
+    image: String,
+  },
+],
+
 
     /* ================= PAYMENT ================= */
     paymentMethod: {

@@ -14,7 +14,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // =========================
-// FIX __dirname FOR ES MODULE
+// FIX __dirname (ESM)
 // =========================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,27 +25,38 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // =========================
-// MIDDLEWARES
+// CORE MIDDLEWARES
 // =========================
-app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // =========================
-// MONGOOSE CONNECT
+// REQUEST LOGGER (DEBUG SAVER)
+// =========================
+app.use((req, res, next) => {
+  console.log(`➡️ ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// =========================
+// MONGOOSE CONNECT (SAFE)
 // =========================
 mongoose
   .connect(process.env.MONGO_DB)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Failed:", err);
+    process.exit(1);
+  });
 
 // =========================
 // MODELS
@@ -59,7 +70,6 @@ import Category from "./models/category.js";
 import authRoutes from "./routes/auth.js";
 import orderRoutes from "./routes/order.js";
 import adminOrdersRoutes from "./routes/adminOrders.js";
-import adminAuth from "./middlewares/adminAuth.js";
 
 // =========================
 // MULTER CONFIG
@@ -79,63 +89,47 @@ const upload = multer({ storage });
 // =========================
 // CATEGORY ROUTES
 // =========================
-
-// GET all categories
 app.get("/api/categories", async (req, res) => {
   try {
-    const list = await Category.find();
-    res.json(list);
-  } catch (err) {
+    res.json(await Category.find());
+  } catch {
     res.status(500).json({ message: "Error fetching categories" });
   }
 });
 
-// CREATE category
 app.post("/api/categories", async (req, res) => {
   try {
-    const saved = await new Category(req.body).save();
-    res.json(saved);
-  } catch (err) {
+    res.json(await new Category(req.body).save());
+  } catch {
     res.status(500).json({ message: "Failed to save category" });
   }
 });
 
-// UPDATE category
 app.put("/api/categories/:id", async (req, res) => {
   try {
-    const updated = await Category.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    res.json(updated);
-  } catch (err) {
+    res.json(
+      await Category.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    );
+  } catch {
     res.status(500).json({ message: "Failed to update category" });
   }
 });
 
-// DELETE category
 app.delete("/api/categories/:id", async (req, res) => {
   try {
-    const deleted = await Category.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-    res.json({ message: "Category deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Error deleting category" });
+    await Category.findByIdAndDelete(req.params.id);
+    res.json({ message: "Category deleted" });
+  } catch {
+    res.status(500).json({ message: "Delete failed" });
   }
 });
 
-// GET category with products
 app.get("/api/categories/:id", async (req, res) => {
   try {
-    const cat = await Category.findById(req.params.id);
-    if (!cat) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-
+    const category = await Category.findById(req.params.id);
     const products = await Product.find({ category: req.params.id });
-    res.json({ category: cat, products });
-  } catch (err) {
+    res.json({ category, products });
+  } catch {
     res.status(500).json({ message: "Error fetching category" });
   }
 });
@@ -143,164 +137,89 @@ app.get("/api/categories/:id", async (req, res) => {
 // =========================
 // PRODUCT ROUTES
 // =========================
-
-// GET all products
 app.get("/api/products", async (req, res) => {
   try {
     const { category } = req.query;
-    const list = category
-      ? await Product.find({ category }).populate("category")
-      : await Product.find().populate("category");
-
-    res.json(list);
-  } catch (err) {
+    res.json(
+      category
+        ? await Product.find({ category }).populate("category")
+        : await Product.find().populate("category")
+    );
+  } catch {
     res.status(500).json({ message: "Error fetching products" });
   }
 });
 
-// GET single product
 app.get("/api/products/:id", async (req, res) => {
   try {
-    const prod = await Product.findById(req.params.id).populate("category");
-    if (!prod) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-    res.json(prod);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching product" });
+    res.json(await Product.findById(req.params.id).populate("category"));
+  } catch {
+    res.status(404).json({ message: "Product not found" });
   }
 });
 
-// CREATE product
 app.post("/api/products", upload.single("image"), async (req, res) => {
   try {
-    const { title, price, category, description } = req.body;
-
-    const saved = await new Product({
-      title,
-      price,
-      category,
-      description,
-      image: req.file ? `/uploads/${req.file.filename}` : "",
-    }).save();
-
-    res.json(saved);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to save product" });
+    res.json(
+      await new Product({
+        ...req.body,
+        image: req.file ? `/uploads/${req.file.filename}` : "",
+      }).save()
+    );
+  } catch {
+    res.status(500).json({ message: "Product create failed" });
   }
 });
 
-/* ======================================================
-   GET ALL ORDERS FOR A USER
-   GET /api/orders
-====================================================== */
-app.get("/", async (req, res) => {
-  try {
-    const { userId } = req.query;
-
-    // 🔒 Must pass userId from frontend
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
-    }
-
-    const orders = await Order.find({ userId })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    res.json(orders);
-  } catch (err) {
-    console.error("Fetch orders error:", err);
-    res.status(500).json({ message: "Failed to fetch orders" });
-  }
-});
-
-
-// UPDATE product
 app.put("/api/products/:id", upload.single("image"), async (req, res) => {
   try {
-    const prod = await Product.findById(req.params.id);
-    if (!prod) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    Object.assign(prod, req.body);
-
-    if (req.file) {
-      if (prod.image) {
-        const oldPath = path.join(__dirname, "uploads", path.basename(prod.image));
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      prod.image = `/uploads/${req.file.filename}`;
-    }
-
-    const updated = await prod.save();
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to update product" });
+    const product = await Product.findById(req.params.id);
+    Object.assign(product, req.body);
+    if (req.file) product.image = `/uploads/${req.file.filename}`;
+    res.json(await product.save());
+  } catch {
+    res.status(500).json({ message: "Update failed" });
   }
 });
 
-// DELETE product
 app.delete("/api/products/:id", async (req, res) => {
   try {
-    const deleted = await Product.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    if (deleted.image) {
-      const imgPath = path.join(__dirname, "uploads", path.basename(deleted.image));
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-    }
-
-    res.json({ message: "Product deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Error deleting product" });
-  }
-});
-
-// UPGRADED LIVE SEARCH (Perfectly synced with SearchResults.jsx)
-app.get("/api/products/search", async (req, res) => {
-  try {
-    const { q } = req.query;
-
-    const results = await Product.find(
-      { $text: { $search: q } }, 
-      { score: { $meta: "textScore" } } // Calculate how well it matches
-    )
-    .sort({ score: { $meta: "textScore" } }) // Sort by best match first
-    .limit(8)
-    .select("title price image categoryName");
-
-    res.json(results);
-  } catch (err) {
-    // Fallback to Regex if Text Search fails or is empty
-    const results = await Product.find({
-      title: { $regex: q, $options: "i" }
-    }).limit(8);
-    res.json(results);
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: "Product deleted" });
+  } catch {
+    res.status(500).json({ message: "Delete failed" });
   }
 });
 
 // =========================
-// AUTH & ORDER ROUTES
+// SEARCH
+// =========================
+app.get("/api/products/search", async (req, res) => {
+  const q = req.query.q || "";
+  const results = await Product.find({
+    title: { $regex: q, $options: "i" },
+  }).limit(8);
+  res.json(results);
+});
+
+// =========================
+// AUTH & ORDER ROUTES (FINAL)
 // =========================
 app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);          // user orders
-app.use("/api/admin/orders", adminOrdersRoutes); // admin only
-  // admin (GET / PATCH)
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin/orders", adminOrdersRoutes);
 
 // =========================
-// 404 JSON FALLBACK (VERY IMPORTANT)
+// 404 HANDLER
 // =========================
 app.use((req, res) => {
   res.status(404).json({ message: "API route not found" });
 });
 
 // =========================
-// START SERVER
+// SERVER START
 // =========================
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);
